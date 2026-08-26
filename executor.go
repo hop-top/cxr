@@ -10,9 +10,10 @@ import (
 // Executor routes requests to handlers and wraps execution with xrr
 // record/replay via an xrr.Adapter.
 type Executor struct {
-	router  *Router
-	session xrr.Session // nil → no cassette wrapping
-	adapter xrr.Adapter // nil → no cassette wrapping
+	router     *Router
+	session    xrr.Session // nil → no cassette wrapping
+	adapter    xrr.Adapter // nil → no cassette wrapping
+	middleware []Middleware
 }
 
 // NewExecutor returns an Executor that routes via r and records/replays
@@ -21,9 +22,20 @@ func NewExecutor(router *Router, session xrr.Session, adapter xrr.Adapter) *Exec
 	return &Executor{router: router, session: session, adapter: adapter}
 }
 
-// Exec resolves req to a handler and runs it, wrapping with xrr when a
-// session is configured.
+// Use appends middleware to the chain. Exec applies them in
+// registration order, each receiving the previous one's output, before
+// the router resolves the request.
+func (e *Executor) Use(mw ...Middleware) {
+	e.middleware = append(e.middleware, mw...)
+}
+
+// Exec applies the middleware chain, resolves req to a handler, and
+// runs it, wrapping with xrr when a session is configured.
 func (e *Executor) Exec(ctx context.Context, req Request) (Result, error) {
+	for _, mw := range e.middleware {
+		req = mw(ctx, req)
+	}
+
 	h, err := e.router.Route(req)
 	if err != nil {
 		return Result{}, fmt.Errorf("cxr: route: %w", err)

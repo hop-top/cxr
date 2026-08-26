@@ -83,6 +83,30 @@ Caching is the handler's responsibility — `ProcessHandler` memoizes the
 result for the handler's lifetime via `sync.Once`. The `Router` itself
 does not cache `Probe` output.
 
+## Content-based routing
+
+`ClassifyMiddleware` steers dispatch by prompt content. A `Classifier`
+labels the prompt; a confident, mapped verdict sets the explicit handler
+ID (chain step 1) on a copy of the request. A nil classifier, a
+classifier error, an empty / unmapped label, or a confidence below
+`MinConfidence` all leave the request untouched — the deterministic
+chain above stays authoritative. An explicit `Config["handler"]` set by
+the caller always outranks the classifier.
+
+```go
+exec.Use(cxr.ClassifyMiddleware(cxr.ClassifierRouting{
+    Classifier: myClassifier, // implements cxr.Classifier
+    Routes: map[string]cxr.ClassifiedRoute{
+        "code": {Handler: "claude"},
+    },
+    MinConfidence: 0.6,
+}))
+```
+
+`Executor.Use` accepts any `Middleware` (`func(ctx, Request) Request`);
+middleware run in registration order before the router resolves the
+request.
+
 ## Subprocess execution
 
 `process.go` provides helpers for the common case where a Handler shells
