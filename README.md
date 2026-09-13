@@ -7,10 +7,7 @@ capability / tool intersection, executes them (subprocess or in-process),
 and wraps execution with [`hop.top/xrr`](https://github.com/hop-top/xrr)
 record / replay transparently.
 
-> [!WARNING]
-> **Alpha — API and tag history may break.** `cxr/v0.1.x-alpha.*` is the
-> first published line. Pin to an exact tag, not a range. Breaking changes
-> may land between alpha tags; see [releases](https://github.com/hop-top/cxr/releases).
+> **Status:** Active development. Usable today, with some rough edges as features evolve.
 
 ## What it does
 
